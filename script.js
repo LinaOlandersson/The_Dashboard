@@ -38,6 +38,13 @@ const newBackgroundBtn = document.getElementById("new-background-btn");
 const UNSPLASH_BASE_URL = "https://api.unsplash.com/photos/random?client_id=";
 const UNSPLASH_API_KEY = "G6SxHbLj1Iz-VMNf3Kf0S87oWUnb0gmvBOo6YYtwAyE";
 
+function setSavedBackground() {
+  const savedBackground = localStorage.getItem("background-image");
+  if (savedBackground) {
+    document.body.style.backgroundImage = `url(${savedBackground})`;
+  }
+}
+
 async function changeBackground() {
   try {
     const pResponse = await fetch(`${UNSPLASH_BASE_URL}${UNSPLASH_API_KEY}`);
@@ -48,6 +55,7 @@ async function changeBackground() {
     const pData = await pResponse.json();
     const pictureUrl = pData.urls.regular;
     document.body.style.backgroundImage = `url(${pictureUrl})`;
+    localStorage.setItem("background-image", pictureUrl);
     newBackgroundBtn.style.backgroundColor = "rgba(255, 255, 255, 0.7)";
     newBackgroundBtn.style.color = "black";
     document.getElementById("main-title").style.color =
@@ -56,6 +64,11 @@ async function changeBackground() {
     console.error("Error fetching background image: ", error);
   }
 }
+
+window.addEventListener("DOMContentLoaded", function () {
+  setSavedBackground();
+  newBackgroundBtn.addEventListener("click", changeBackground);
+});
 
 newBackgroundBtn.addEventListener("click", changeBackground);
 
@@ -99,11 +112,6 @@ function displayLinks() {
   linksArray.forEach((link) => {
     links.innerHTML += createLinkHTML(link);
   });
-
-  // const removeButtons = document.querySelectorAll(".remove-link-btn");
-  // removeButtons.forEach((button) => {
-  //   button.addEventListener("click", removeLink);
-  // });
 }
 
 // Add a link
