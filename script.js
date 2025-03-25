@@ -38,26 +38,43 @@ const newBackgroundBtn = document.getElementById("new-background-btn");
 const UNSPLASH_BASE_URL = "https://api.unsplash.com/photos/random?client_id=";
 const UNSPLASH_API_KEY = "G6SxHbLj1Iz-VMNf3Kf0S87oWUnb0gmvBOo6YYtwAyE";
 
+newBackgroundBtn.addEventListener("click", changeBackground);
+
 async function changeBackground() {
   try {
-    const pResponse = await fetch(`${UNSPLASH_BASE_URL}${UNSPLASH_API_KEY}`);
+    const pictureResponse = await fetch(
+      `${UNSPLASH_BASE_URL}${UNSPLASH_API_KEY}`
+    );
 
-    if (!pResponse.ok) {
+    if (!pictureResponse.ok) {
       throw new Error("Det gick inte att hämta en slumpad bild.");
     }
-    const pData = await pResponse.json();
-    const pictureUrl = pData.urls.regular;
+    const pictureData = await pictureResponse.json();
+    const pictureUrl = pictureData.urls.regular;
     document.body.style.backgroundImage = `url(${pictureUrl})`;
-    newBackgroundBtn.style.backgroundColor = "rgba(255, 255, 255, 0.7)";
-    newBackgroundBtn.style.color = "black";
-    document.getElementById("main-title").style.color =
-      "rgba(255, 255, 255, 0.9)";
+    backgroundSettings();
+    localStorage.setItem("backgroundImage", pictureUrl);
   } catch (error) {
-    console.error("Error fetching background image: ", error);
+    console.error("Fel vid hämtning av bakgrundsbild: ", error);
   }
 }
 
-newBackgroundBtn.addEventListener("click", changeBackground);
+function loadBackgroundFromLocalStorage() {
+  const savedBackground = localStorage.getItem("backgroundImage");
+  if (savedBackground) {
+    document.body.style.backgroundImage = `url(${savedBackground})`;
+    backgroundSettings();
+  }
+}
+
+function backgroundSettings() {
+  newBackgroundBtn.style.backgroundColor = "rgba(255, 255, 255, 0.7)";
+  newBackgroundBtn.style.color = "black";
+  document.getElementById("main-title").style.color =
+    "rgba(255, 255, 255, 0.9)";
+}
+
+window.addEventListener("DOMContentLoaded", loadBackgroundFromLocalStorage);
 
 //Functions for "Snabblänkar"
 
@@ -75,19 +92,24 @@ function getLinksFromLocalStorage() {
   } else return [];
 }
 
-// save links to localStorage
+// Save links to localStorage
 function saveLinksToLocalStorage(linksArray) {
   localStorage.setItem("links", JSON.stringify(linksArray));
 }
 
 // The HTML for a link
 function createLinkHTML(link) {
+  const faviconBase =
+    "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=";
   return `
     <div class="link">
       <a href="${link.url}" target="_blank">
+        <img src="${faviconBase + link.url}&size=128" alt="${
+    link.name
+  }" class="icon" />
         <b><p>${link.name}</p></b>
-        <button class="remove-link-btn">&#8854;</button>
       </a>
+      <button class="remove-link-btn">&#8854;</button>
     </div>
   `;
 }
@@ -101,8 +123,25 @@ function displayLinks() {
   });
 }
 
+// Display modal
+addLinkButton.addEventListener("click", function () {
+  modal.style.display = "block";
+});
+
+window.addEventListener("click", function (event) {
+  if (event.target === modal) {
+    modal.style.display = "none";
+    addLinkForm.reset();
+  }
+});
+
+// Eventlisteners for adding and removing links
+addLinkForm.addEventListener("submit", addLink);
+links.addEventListener("click", removeLink);
+
 // Add a link
-function addLink() {
+function addLink(e) {
+  e.preventDefault();
   const linkUrl = document.getElementById("link-url").value;
   const linkName = document.getElementById("link-name").value;
 
@@ -115,7 +154,7 @@ function addLink() {
   currentLinks.push(newLink);
   saveLinksToLocalStorage(currentLinks);
 
-  // Update DOM, close and reset modal
+  // Update list, close and reset modal
   displayLinks();
   modal.style.display = "none";
   addLinkForm.reset();
@@ -126,39 +165,27 @@ function removeLink(event) {
   if (!event.target.classList.contains("remove-link-btn")) return;
   event.preventDefault();
   const linkToRemove = event.target.closest(".link");
-  const linkUrlToRemove = new URL(linkToRemove.querySelector("a").href).href;
+  const linkUrlToRemove = linkToRemove.querySelector("a").href;
 
   // Remove from local storage
   let currentLinks = getLinksFromLocalStorage();
   currentLinks = currentLinks.filter((link) => link.url !== linkUrlToRemove);
   saveLinksToLocalStorage(currentLinks);
 
-  // Display updated DOM
+  // Display updated list
   displayLinks();
 }
-
-// Display modal
-addLinkButton.addEventListener("click", function () {
-  modal.style.display = "block";
-});
-
-window.addEventListener("click", function (event) {
-  if (event.target === modal) {
-    modal.style.display = "none";
-  }
-});
-
-// Eventlisteners for adding and removing links
-addLinkForm.addEventListener("submit", addLink);
-links.addEventListener("click", removeLink);
 
 // Display links when page is loaded
 window.addEventListener("DOMContentLoaded", displayLinks);
 
-// Functions related to "Dagens pappaskämt"
+// Functions related to "Random pappaskämt"
+
+const jokeContainer = document.getElementById("joke");
 
 async function getJoke() {
   try {
+    jokeContainer.innerHTML = "Laddar skämt...";
     const jokeUrl = "https://official-joke-api.appspot.com/random_joke";
     const response = await fetch(jokeUrl);
     if (!response.ok) {
@@ -168,15 +195,16 @@ async function getJoke() {
     displayJoke(data);
   } catch (error) {
     console.log(error);
+    jokeContainer.innerHTML =
+      "Kunde inte hämta dagens skämt. Försök igen senare.";
   }
 }
 
 function displayJoke(data) {
-  const setup = data.setup;
-  const punchline = data.punchline;
   const jokeHTML = `<p>${data.setup}</p>
             <p>${data.punchline}</p>`;
-  document.getElementById("joke").innerHTML = jokeHTML;
+  jokeContainer.innerHTML = "";
+  jokeContainer.innerHTML = jokeHTML;
 }
 
 getJoke();
@@ -186,14 +214,24 @@ getJoke();
 const notes = document.getElementById("notes");
 const savedNote = localStorage.getItem("note");
 
-if (savedNote) {
-  notes.innerHTML = savedNote;
-} else {
-  notes.innerHTML = "";
+try {
+  if (savedNote) {
+    notes.innerHTML = savedNote;
+  } else {
+    notes.innerHTML = "";
+  }
+} catch (error) {
+  console.log(error.message);
+  notes.innerHTML = "Problem med att hämta anteckningar från local storage.";
 }
 
 notes.addEventListener("input", () => {
-  localStorage.setItem("note", notes.innerHTML);
+  try {
+    localStorage.setItem("note", notes.innerHTML);
+  } catch (error) {
+    console.log(error.message);
+    notes.innerHTML = "problem med att spara anteckningar till local storage.";
+  }
 });
 
 //Functions for "main title"
@@ -231,32 +269,33 @@ if (navigator.geolocation) {
   );
 } else {
   console.log("Geolocation stöds inte i den här webbläsaren.");
-  forecast.innerHTML = "Din webbläsare stöder inte geolokalisering.";
+  forecast.innerHTML = "Geolocation stöds inte i den här webbläsaren.";
 }
 
 async function getWeatherData(latitude, longitude) {
   try {
-    const wUrl = `${BASE_URL}?lat=${latitude}&lon=${longitude}&appid=${API_KEY}&units=metric`;
-    const wResponse = await fetch(wUrl);
+    forecast.innerHTML = "Laddar väderdata...";
+    const weatherUrl = `${BASE_URL}?lat=${latitude}&lon=${longitude}&appid=${API_KEY}&units=metric`;
+    const weatherResponse = await fetch(weatherUrl);
 
-    if (!wResponse.ok) {
-      throw new Error(`Error. Status: ${wResponse.status}`);
+    if (!weatherResponse.ok) {
+      throw new Error(`Error. Status: ${weatherResponse.status}`);
     }
-    const wData = await wResponse.json();
-    displayWeatherData(wData);
+    const weatherData = await weatherResponse.json();
+    displayWeatherData(weatherData);
   } catch (error) {
     console.log(error);
-    console.error("Error fetching weather data: ", error);
+    console.error("Kunde inte hämta väderdata: ", error);
     forecast.innerHTML = "Kunde inte hämta väderdata. Försök igen senare.";
   }
 }
 
-function displayWeatherData(wData) {
-  const temperature = Math.round(wData.main.temp);
-  const feelsLike = Math.round(wData.main.feels_like);
-  const weatherIcon = wData.weather[0].icon;
-  const humidity = wData.main.humidity;
-  const windSpeed = wData.wind.speed;
+function displayWeatherData(weatherData) {
+  const temperature = Math.round(weatherData.main.temp);
+  const feelsLike = Math.round(weatherData.main.feels_like);
+  const weatherIcon = weatherData.weather[0].icon;
+  const humidity = weatherData.main.humidity;
+  const windSpeed = weatherData.wind.speed;
 
   const displayHTML = `<img src="https://openweathermap.org/img/wn/${weatherIcon}@2x.png" id="weather-icon">     
   <p>Temp: ${temperature}°C</p>
@@ -264,5 +303,6 @@ function displayWeatherData(wData) {
   <p>Luftfuktighet: ${humidity}%</p>
   <p>Vind: ${windSpeed} m/s</p>`;
 
+  forecast.innerHTML = "";
   forecast.innerHTML = displayHTML;
 }

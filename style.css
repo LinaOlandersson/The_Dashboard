@@ -103,9 +103,6 @@ h2 {
 }
 
 .link {
-  display: block;
-  text-decoration: none;
-  color: black;
   background-color: rgba(255, 255, 255, 0.7);
   height: 53px;
   padding: 3px;
@@ -124,9 +121,13 @@ h2 {
 }
 
 .link a {
+  flex: 1;
+  color: black;
   margin: 10px;
   text-decoration: none;
-  color: inherit;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .link:hover {
@@ -135,6 +136,7 @@ h2 {
 }
 
 .icon {
+  height: 40px;
   border-radius: 50%;
   -webkit-border-radius: 50%;
   -moz-border-radius: 50%;
