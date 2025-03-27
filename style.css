@@ -263,6 +263,10 @@ input {
   -o-border-radius: 10px;
 }
 
+#notes {
+  min-height: 303px;
+}
+
 #joke,
 #forecast {
   display: flex;
