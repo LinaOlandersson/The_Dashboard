@@ -263,7 +263,8 @@ input {
   -o-border-radius: 10px;
 }
 
-#notes {
+#notes,
+#forecast {
   min-height: 303px;
 }
 
